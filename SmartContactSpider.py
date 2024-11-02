@@ -79,25 +79,15 @@ def getsccodecore(eachLine):
         return 0
 
     fo = open(filepath + filename + ".sol", "w+", encoding="utf-8")
-    if len(targetPRE) == 1:
-        # 仅有一个元素，检查是否为 JSON 格式
-        content = targetPRE[0].text
+    for eachpre in targetPRE:
         try:
-            json.loads(content)
+            # 尝试将 eachpre.text 解析为 JSON
+            json.loads(eachpre.text)
+            print("Skipping Settings JSON")
+            continue  # 如果成功解析为 JSON，跳过写入
         except json.JSONDecodeError:
-            # 不是 JSON 格式，写入文件
-            fo.write(content)
-    else:
-        # 多个元素时，按照之前的逻辑处理
-        for eachpre in targetPRE[:-1]:
+            # 如果解析失败，说明它不是 JSON
             fo.write(eachpre.text)
-
-        last_pre = targetPRE[-1].text
-        try:
-            json.loads(last_pre)
-            print("Skipping JSON content in the last element")
-        except json.JSONDecodeError:
-            fo.write(last_pre)
 
     fo.close()
     printtime()
