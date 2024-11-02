@@ -278,7 +278,7 @@ def getPathCodeDirectory():
 def updatescurl():
     # TODO:
     # getUrlList10000 getUrlList500
-    urlList = getUrlList500()
+    urlList = getUrlList()
 
     # filepath是保存要爬取的智能合约地址的文件的存放路径
     # 请根据自己的需求改成自己想要的路径。
