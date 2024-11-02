@@ -18,47 +18,39 @@ def printtime():
     return 0
 
 
-def getsccodecore(eachLine):
-    # 伪装成浏览器
+def getsccodecore(datajson):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
     }
 
-    failedTimes = 100
-    while True:  # 在制定次数内一直循环，直到访问站点成功
-
+    failedTimes = 50
+    while True:
         if failedTimes <= 0:
             printtime()
-            print("失败次数过多，请检查网络环境！")
+            print("final failed times exceed 50!")
             break
 
         failedTimes -= 1
         try:
-            # 以下except都是用来捕获当requests请求出现异常时，
-            # 通过捕获然后等待网络情况的变化，以此来保护程序的不间断运行
+
             printtime()
-            # eachLineurl = eachLine[:80]
-            # 使用正则表达式匹配完整的网址
-            match = re.search(r"https?://\S+/address/0x[a-fA-F0-9]{40}#code", eachLine)
-            if match:
-                eachLineurl = match.group(0)  # 提取完整的URL
-            print("正在连接的的网址链接是 " + eachLineurl)
-            response = requests.get(eachLineurl, headers=headers, timeout=5)
+            print("fecth:" + datajson.get("codeURL"))
+            response = requests.get(datajson.get("codeURL"), headers=headers, timeout=5)
             break
 
         except requests.exceptions.ConnectionError:
             printtime()
-            print("ConnectionError！请等待3秒！")
+            print("ConnectionError! please wait 3 second!")
             time.sleep(3)
 
         except requests.exceptions.ChunkedEncodingError:
             printtime()
-            print("ChunkedEncodingError！请等待3秒！")
+            print("ChunkedEncodingError! please wait 3 second!")
             time.sleep(3)
 
         except:
             printtime()
-            print("Unfortunitely,出现未知错误！请等待3秒！")
+            print("Unfortunitely Error! please wait 3 second!")
             time.sleep(3)
 
     response.encoding = response.apparent_encoding
@@ -68,101 +60,86 @@ def getsccodecore(eachLine):
     filepath = getPathCodeDirectory()
     os.makedirs(filepath, exist_ok=True)
 
-    # filename为合约地址 '0x5f3ed22b53ac0a001f0feedc2a3985999377c2ab'
-    match = re.search(r"0x[a-fA-F0-9]{40}", eachLine)
-    if match:
-        filename = match.group(0)
-
+    filename = datajson.get("address")
     if os.path.exists(filepath + filename + ".sol"):
         printtime()
-        print(filename + ".sol已存在！")
+        print(filename + ".sol already exists!")
         return 0
 
     fo = open(filepath + filename + ".sol", "w+", encoding="utf-8")
     for eachpre in targetPRE:
         try:
-            # 尝试将 eachpre.text 解析为 JSON
             json.loads(eachpre.text)
             print("Skipping Settings JSON")
-            continue  # 如果成功解析为 JSON，跳过写入
+            continue
         except json.JSONDecodeError:
-            # 如果解析失败，说明它不是 JSON
             fo.write(eachpre.text)
 
     fo.close()
     printtime()
-    print(filename + ".sol新建完成！")
+    print(filename + ".sol created!")
 
     return 0
 
 
 def getsccode():
-    filepath = getFilePathAddress_txt()
+    jsonfilepath = getUrlJsonFilePath()
     try:
-        SCAddress = open(filepath, "r")
+        with open(jsonfilepath, "r") as file:
+            datas = json.load(file)
 
     except:
         printtime()
-        print("打开智能合约URL地址仓库错误！请检查文件目录是否正确！")
+        print("read json file error!")
 
-    # 一行一行的读取 address.txt 的内容
-    for eachLine in SCAddress:
-        # print("test:" + eachLine[:80])
-        # address.txt每一行前80字段 https://cn.etherscan.com/address/0xEeE690AAA67d1eE33365c02C3Bf477A93867052f#code
-        getsccodecore(eachLine)  # 这个才是获取智能合约代码的核心函数
+    for data in datas:
+        getsccodecore(data)
 
-    SCAddress.close()
+    file.close()
     return 0
 
 
-def getSCAddress(eachurl, filepath):
-    # 伪装成某种浏览器，防止被服务器拒绝服务
+def getSCAddress(eachurl):
+    json_array = []
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.87 Safari/537.36"
     }
 
-    # 设置访问网址失败的最高次数，达到制定次数后，报告错误，停止程序
     failedTimes = 50
 
-    while True:  # 一直循环，直到在制定的次数内访问站点成功
+    while True:
 
         if failedTimes <= 0:
             printtime()
-            print("失败次数过多，请检查网络环境！")
+            print("final failed times exceed 50!")
             break
 
-        failedTimes -= 1  # 每执行一次就要减1
+        failedTimes -= 1
         try:
-            # 以下except都是用来捕获当requests请求出现异常时，
-            # 通过捕获然后等待网络情况的变化，以此来保护程序的不间断运行
-            print("正在连接的的网址链接是 " + eachurl)
-
+            print("fecth:" + eachurl)
             response = requests.get(url=eachurl, headers=headers, timeout=5)
-
-            # 执行到这一句意味着成功访问，于是退出while循环
             break
+
         except requests.exceptions.ConnectionError:
             printtime()
-            print("ConnectionError!请等待3秒！")
+            print("connectionError! waiting 3 second!")
             time.sleep(3)
 
         except requests.exceptions.ChunkedEncodingError:
             printtime()
-            print("ChunkedEncodingError!请等待3秒！")
+            print("ChunkedEncodingError! waiting 3 second!")
             time.sleep(3)
 
         except:
             printtime()
-            print("出现未知错误！请等待3秒！")
+            print("error! waiting 3 second!")
             time.sleep(3)
 
-    # 转换成UTF-8编码
     response.encoding = response.apparent_encoding
 
-    # 煲汤 爬虫解析
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # 查找这个字段，这个字段下，包含智能合约代码的URL地址
     # targetDiv = soup.find_all('div', 'table-responsive')
 
     try:
@@ -170,44 +147,33 @@ def getSCAddress(eachurl, filepath):
 
     except:
         printtime()
-        print("targetTBody未成功获取！")
-        return 1
+        print("get targetTBody failed!")
+        return [], 1
 
-    # 以追加的方式打开文件。
-    # 如果文件不存在，则新建；如果文件已存在，则在文件指针末尾追加
-    fo = open(filepath, "a")
-
-    # 把每一个地址，都写到文件里面保存下来
     for targetTR in targetTBody:
-        # print(targetTR)
-        # 获取每一行
         if targetTR.name == "tr":
-            # 获取一行所有列
             data = targetTR.find_all("td")
-
-            Address = data[0].getText()
+            # /address/0xceea87307db481e5ffbd412784e17e02e3851ace#code
+            herf = targetTR.td.find("a", "me-1").attrs["href"]
+            match = re.search(r"0x[a-fA-F0-9]{40}", herf)
+            if match:
+                Address = match.group(0)
             Name = data[1].getText()
             Compiler = data[2].getText()
             Version = data[3].getText()
             Balance = data[4].getText()
             VerifiedTime = data[7].getText()
             if "Solidity".lower() in Compiler.lower():
-                fo.write(
-                    etherscan_url
-                    + targetTR.td.find("a", "me-1").attrs["href"]
-                    + " "
-                    + VerifiedTime
-                    + ":"
-                    + Name
-                    + "==>Version:"
-                    + Version
-                    + "==>Balance:"
-                    + Balance
-                    + "\n"
-                )
+                item = {
+                    "contractnName": Name,
+                    "address": Address,
+                    "codeURL": etherscan_url + herf,
+                    "version": Version,
+                    "verified": VerifiedTime,
+                }
+                json_array.append(item)
 
-    fo.close()
-    return 0
+    return json_array, 0
 
 
 def getUrlList():
@@ -248,75 +214,69 @@ def getUrlList10000():
     return urlList
 
 
-def getFilePathAddress_txt():
-    # 获取当前脚本所在的目录
+def getUrlJsonFilePath():
     current_directory = os.path.dirname(os.path.abspath(__file__))
     address_directory_path = os.path.join(current_directory, "temp_address")
     os.makedirs(address_directory_path, exist_ok=True)
-    # 构建相对路径到address.txt文件
-    relative_file_path = "address_500.txt"
+    relative_file_path = "address_500.json"
     if listNumber == config.ListNumber.TenThousand:
-        relative_file_path = "address_10000.txt"
-    # 构建访问address.txt的完整路径
+        relative_file_path = "address_10000.json"
     address_file_path = os.path.join(address_directory_path, relative_file_path)
     return address_file_path
 
 
 def getPathCodeDirectory():
-    # 获取当前脚本所在的目录
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    # 构建相对路径到code文件夹
     relative_file_path = "temp_code/code500/"
     if listNumber == config.ListNumber.TenThousand:
         relative_file_path = "temp_code/code10000/"
-
-    # 构建访问code目录的完整路径
     code_directory_path = os.path.join(current_directory, relative_file_path)
     return code_directory_path
 
 
 def updatescurl():
-    # TODO:
-    # getUrlList10000 getUrlList500
     urlList = getUrlList()
 
-    # filepath是保存要爬取的智能合约地址的文件的存放路径
-    # 请根据自己的需求改成自己想要的路径。
+    filepath = getUrlJsonFilePath()
 
-    filepath = getFilePathAddress_txt()
-
-    # 把旧的存放合约地址的文件清除干净
     try:
         if os.path.exists(filepath):
             os.remove(filepath)
             printtime()
-            print("已清除%s目录下的旧文件（仓库）！" % filepath)
+            print("Remove", filepath)
     except IOError:
 
         printtime()
-        print("出现一个不能处理的错误，终止程序：IOError!")
+        print("IOError!")
 
-        # 函数不正常执行，返回1
         return 1
 
-    # 读取urlList里的每一个URL网页里的智能合约地址
+    all_json_data = []
     for eachurl in urlList:
         time = 0
-        while 1 == getSCAddress(eachurl, filepath):
+        while True:
+            json_array, result = getSCAddress(eachurl)
+            if result == 0:
+                all_json_data.extend(json_array)
+                break
             time += 1
             if time == 10:
                 break
+
             pass
 
-    # 函数正常执行，返回0
+    json_data = json.dumps(all_json_data, indent=2)
+    with open(filepath, "w") as fo:
+        fo.write(json_data)
+
     return 0
 
 
 def main():
-    # 更新要爬取的智能合约的地址
+    #  get the smart contract code url list
     updatescurl()
 
-    # 根据智能合约的地址去爬取智能合约的代码
+    # get the smart contract code
     getsccode()
 
 
